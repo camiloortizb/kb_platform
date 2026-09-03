@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-09-02T05:19:22.612181+00:00",
+  "source_file": "C:/Users/Camilo Ortiz/Downloads/MATRIZ B2B (2).xlsx",
+  "metrics": {
+    "total_productos": 1299,
+    "con_ean_maestro": 1167,
+    "cobertura_ean_porcentaje": 89.84,
+    "con_formato_normalizado": 982,
+    "con_descripcion_completa": 953,
+    "con_descripcion_breve": 953,
+    "total_marcas_registradas": 74,
+    "total_fuentes_oficiales_mapeadas": 84,
+    "total_imagenes_galeria": 3198,
+    "total_rotulos_documentacion": 0
+  },
+  "status": "MIGRACION_100_EXITOSA"
+}

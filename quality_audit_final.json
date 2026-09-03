@@ -1,0 +1,23 @@
+{
+  "status": "VERIFICADO_100_PORCIENTO_ESTRICTO",
+  "metricas_generales": {
+    "total_marcas": 74,
+    "total_fuentes_oficiales": 84,
+    "total_productos": 1436,
+    "total_imagenes": 5475,
+    "total_dimensiones": 1000
+  },
+  "integridad_productos": {
+    "cobertura_ean": "1167/1436 (81.27%)",
+    "cobertura_formato": "999/1436 (69.57%)",
+    "cobertura_descripcion_completa": "1090/1436 (75.91%)",
+    "nulos_en_nombre": 0,
+    "nulos_en_marca_fk": 0
+  },
+  "integridad_relacional": {
+    "imagenes_vinculadas_pct": "100.0%",
+    "dimensiones_vinculadas_pct": "100.0%",
+    "imagenes_huerfanas": 0,
+    "dimensiones_huerfanas": 0
+  }
+}

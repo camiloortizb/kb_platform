@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #F5F5F7;
+    --surface: #FFFFFF;
+    --surface-secondary: #F8F8F9;
+    --text-primary: #17181B;
+    --text-secondary: #6B6E75;
+    --text-muted: #979AA2;
+    --border-subtle: #E7E8EB;
+    
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-display: 'Outfit', sans-serif;
+    --font-editorial: 'Cinzel', serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    letter-spacing: -0.015em;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+  }
+
+  .font-editorial {
+    font-family: var(--font-editorial);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+/* ==========================================================================
+   LIQUID K-BEAUTY DESIGN SYSTEM
+   70% Minimal Clean × 20% Liquid Glass × 10% Silver Chrome
+   ========================================================================== */
+
+/* 1. Liquid Glass Utilities (20%) */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 35px -5px rgba(23, 24, 27, 0.05), 0 0 0 1px rgba(231, 232, 235, 0.6);
+}
+
+.liquid-glass-nav {
+  background: rgba(245, 245, 247, 0.82);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-bottom: 1px solid rgba(231, 232, 235, 0.8);
+}
+
+.liquid-glass-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 8px -2px rgba(23, 24, 27, 0.04), 0 1px 2px rgba(23, 24, 27, 0.02);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-glass-card:hover {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  box-shadow: 0 12px 32px -6px rgba(23, 24, 27, 0.08), 0 4px 12px -2px rgba(23, 24, 27, 0.03);
+  transform: translateY(-2px);
+}
+
+.liquid-glass-surface {
+  background: rgba(248, 248, 249, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+}
+
+/* 2. Silver Chrome & Metallic Accents (10%) */
+.chrome-gradient-text {
+  background: linear-gradient(135deg, #0F172A 0%, #334155 45%, #64748B 70%, #0F172A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.chrome-silver-text {
+  background: linear-gradient(135deg, #1E293B 0%, #475569 50%, #94A3B8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.chrome-badge {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 50%, #E2E8F0 100%);
+  border: 1px solid #CBD5E1;
+  color: #1E293B;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.chrome-btn-primary {
+  background: linear-gradient(180deg, #1E232F 0%, #0D1017 100%);
+  color: #FFFFFF;
+  border: 1px solid #2A303F;
+  box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.chrome-btn-primary:hover {
+  background: linear-gradient(180deg, #2D3546 0%, #171B24 100%);
+  border-color: #3B4459;
+  box-shadow: 0 4px 14px -1px rgba(15, 23, 42, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.chrome-btn-secondary {
+  background: #FFFFFF;
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.chrome-btn-secondary:hover {
+  background: var(--surface-secondary);
+  border-color: #CBD5E1;
+  color: #0F172A;
+}
+
+/* 3. Clinical Status Tags */
+.status-tag-radar {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #CBD5E1;
+}
+
+.status-tag-catalog {
+  background: #F0FDFA;
+  color: #0F766E;
+  border: 1px solid #CCFBF1;
+}
+
+.status-tag-ai {
+  background: #FAF5FF;
+  color: #7E22CE;
+  border: 1px solid #F3E8FF;
+}
+
+.status-tag-approval {
+  background: #FFFBEB;
+  color: #B45309;
+  border: 1px solid #FEF3C7;
+}
+
+.status-tag-published {
+  background: #F0FDF4;
+  color: #15803D;
+  border: 1px solid #DCFCE7;
+}
+
+/* Ambient Diffused Light Caustic */
+@keyframes causticFloat1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+}
+
+.ambient-caustic-1 {
+  animation: causticFloat1 20s infinite ease-in-out;
+}
+
+/* Sleek Minimal Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F5F5F7;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+  border: 1px solid #F5F5F7;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+
+
