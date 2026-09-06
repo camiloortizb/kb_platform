@@ -65,7 +65,7 @@ export default function ProductDetailModal({
       setFormData({
         name: product.name || '',
         format: product.format || '',
-        category: product.category || 'Skincare Coreano',
+        category: product.category || 'Cuidado Facial',
         wholesale_price: Number(product.wholesale_price || 14.50),
         retail_price: Number(product.retail_price || 26.00),
         cost_price: Number(product.cost_price || 8.50),

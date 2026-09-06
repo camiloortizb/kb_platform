@@ -23,7 +23,9 @@ import {
   Plus,
   ShieldCheck,
   Building2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  LogOut,
+  User
 } from 'lucide-react'
 
 // Views
@@ -40,8 +42,10 @@ import AiAgentsView from './views/AiAgentsView'
 import ActivityLogView from './views/ActivityLogView'
 import B2BOrdersView from './views/B2BOrdersView'
 import SettingsView from './views/SettingsView'
+import LoginView from './views/LoginView'
 
-// Services & Components
+// Auth, Services & Components
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { productService } from './services/productService'
 import { b2bService } from './services/b2bService'
 import { ToastProvider, useToast } from './components/ToastContainer'
@@ -49,6 +53,7 @@ import CommandPalette from './components/CommandPalette'
 import ProductDetailModal from './components/ProductDetailModal'
 
 function MainApp() {
+  const { user, isAuthenticated, logout, isAdmin, isCommercial } = useAuth()
   const { addToast } = useToast()
   const [currentView, setCurrentView] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -79,7 +84,12 @@ function MainApp() {
   // Modal State
   const [selectedProduct, setSelectedProduct] = useState(null)
 
-  // Load all tables from Supabase
+  // If not authenticated, render Login Screen
+  if (!isAuthenticated) {
+    return <LoginView />
+  }
+
+  // Load all tables from Supabase when authenticated
   useEffect(() => {
     fetchAllHubData()
   }, [])
@@ -176,7 +186,6 @@ function MainApp() {
   // BUSINESS WORKFLOW ACTIONS & PERSISTENCE
   // ============================================================================
 
-  // 1. Live Product & Pricing Save Handler
   const handleSaveProduct = async (productId, updatedFields) => {
     try {
       const data = await productService.updateProduct(productId, updatedFields)
@@ -192,7 +201,6 @@ function MainApp() {
     }
   }
 
-  // 2. B2B Order Save Handler
   const handleSaveB2BOrder = async (orderData, itemsData) => {
     try {
       const { order, items } = await b2bService.createOrder(orderData, itemsData)
@@ -206,7 +214,6 @@ function MainApp() {
     }
   }
 
-  // 3. Update B2B Order Status Handler
   const handleUpdateB2BOrderStatus = async (orderId, newStatus) => {
     try {
       await b2bService.updateOrderStatus(orderId, newStatus)
@@ -217,7 +224,6 @@ function MainApp() {
     }
   }
 
-  // 4. Save B2B Client Handler
   const handleSaveB2BClient = async (clientData) => {
     try {
       const data = await b2bService.createClient(clientData)
@@ -229,7 +235,6 @@ function MainApp() {
     }
   }
 
-  // 5. Promote Discovered Product to Commercial Catalog
   const handlePromoteToCommercial = async (discItem) => {
     try {
       const { data: newP, error: pErr } = await supabase
@@ -271,7 +276,7 @@ function MainApp() {
       }
 
       await supabase.from('activity_log').insert({
-        actor: 'COMMERCIAL_MGR',
+        actor: user?.fullName || 'COMMERCIAL_MGR',
         action: 'DISCOVERY_PROMOTED_TO_CATALOG',
         entity_type: 'product',
         entity_id: String(newP.id),
@@ -285,7 +290,6 @@ function MainApp() {
     }
   }
 
-  // 6. Confirm Purchase Order
   const handleConfirmPo = async (po) => {
     try {
       await supabase
@@ -294,7 +298,7 @@ function MainApp() {
         .eq('id', po.id)
 
       await supabase.from('activity_log').insert({
-        actor: 'COMMERCIAL_MGR',
+        actor: user?.fullName || 'COMMERCIAL_MGR',
         action: 'PURCHASE_ORDER_CONFIRMED',
         entity_type: 'purchase_order',
         entity_id: String(po.id),
@@ -308,18 +312,16 @@ function MainApp() {
     }
   }
 
-  // 7. Approve Product
   const handleApproveProduct = async (productId) => {
     try {
       await productService.approveProduct(productId)
       await fetchAllHubData()
-      addToast('Ficha técnica y claims aprobados exitosamente.', 'success')
+      addToast('Ficha técnica y especificaciones aprobadas exitosamente.', 'success')
     } catch (err) {
       addToast('Error al aprobar producto: ' + err.message, 'error')
     }
   }
 
-  // 8. Return Product
   const handleReturnProduct = async (productId, reason) => {
     try {
       await productService.returnProduct(productId, reason)
@@ -330,7 +332,6 @@ function MainApp() {
     }
   }
 
-  // 9. AI Agent Trigger
   const handleTriggerAgent = async (agentId) => {
     try {
       const { data: run } = await supabase
@@ -339,7 +340,7 @@ function MainApp() {
           agent_name: agentId,
           entity_type: 'catalog',
           entity_id: 'batch_run',
-          prompt_summary: `Ejecución manual de agente especializado: ${agentId}`,
+          prompt_summary: `Ejecución manual de agente: ${agentId}`,
           model_used: 'gemini-3.6-flash',
           status: 'COMPLETED'
         })
@@ -347,7 +348,7 @@ function MainApp() {
         .single()
 
       await supabase.from('activity_log').insert({
-        actor: 'AI_AGENT',
+        actor: user?.fullName || 'AI_AGENT',
         action: `AGENT_${agentId.toUpperCase()}_TRIGGERED`,
         entity_type: 'ai_run',
         entity_id: agentId,
@@ -361,6 +362,11 @@ function MainApp() {
     }
   }
 
+  const handleLogout = async () => {
+    await logout()
+    addToast('Sesión cerrada correctamente.', 'info')
+  }
+
   // ============================================================================
   // CONSOLIDATED 4-SEGMENT NAVIGATION STRUCTURE
   // ============================================================================
@@ -368,7 +374,7 @@ function MainApp() {
     {
       title: '1. Catálogo & Control Maestro',
       items: [
-        { key: 'dashboard', label: 'Dashboard Hub', icon: LayoutDashboard },
+        { key: 'dashboard', label: 'Panel de Control', icon: LayoutDashboard },
         { key: 'products', label: 'Catálogo Comercial', icon: Package },
         { key: 'pipeline', label: 'Pipeline Kanban', icon: Kanban },
         {
@@ -395,7 +401,7 @@ function MainApp() {
     {
       title: '3. Abastecimiento Internacional',
       items: [
-        { key: 'brands', label: 'Radar de Marcas', icon: Layers, badge: brands.filter((b) => b.status === 'RADAR').length },
+        { key: 'brands', label: 'Marcas & Proveedores', icon: Layers, badge: brands.filter((b) => b.status === 'RADAR').length },
         { key: 'discovery', label: 'Discovery (Scraping)', icon: Globe, badge: discoveredProducts.length },
         { key: 'negotiations', label: 'Negociaciones B2B', icon: TrendingUp },
         {
@@ -425,7 +431,7 @@ function MainApp() {
         <div className="absolute inset-0 bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] [background-size:32px_32px] opacity-30" />
       </div>
 
-      {/* Top Navbar with Liquid Glass */}
+      {/* Top Navbar with Clean Branding */}
       <header className="sticky top-0 z-40 liquid-glass-nav">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -437,35 +443,30 @@ function MainApp() {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="relative group cursor-pointer">
-                <div className="w-9 h-9 rounded-xl bg-white border border-[#E7E8EB] flex items-center justify-center shadow-sm text-sm font-bold text-slate-900">
-                  ✨
-                </div>
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#E7E8EB] flex items-center justify-center shadow-xs text-sm font-bold text-slate-900">
+                ✨
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-extrabold tracking-tight text-[#17181B] font-display">
-                    K-BEAUTY
-                  </span>
-                  <span className="text-[11px] uppercase tracking-widest text-[#6B6E75] font-mono font-medium">
+                  <span className="text-base font-black tracking-tight text-[#17181B] font-display">
                     PRODUCT HUB
                   </span>
-                  <span className="hidden sm:inline-block px-2 py-0.5 text-[9px] font-mono font-bold chrome-badge rounded-md">
-                    CLINICAL OS
+                  <span className="hidden sm:inline-block text-[11px] font-medium text-[#6B6E75]">
+                    • Catálogo & Ventas B2B
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Search & Actions */}
+          {/* Quick Search, User Profile & Actions */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setCommandPaletteOpen(true)}
-              className="hidden sm:flex items-center gap-3 px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-[#E7E8EB] hover:border-slate-300 rounded-xl text-xs text-slate-600 transition shadow-sm"
+              className="hidden sm:flex items-center gap-3 px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-[#E7E8EB] hover:border-slate-300 rounded-xl text-xs text-slate-600 transition shadow-xs"
             >
               <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-slate-500 font-medium">Buscar productos, marcas, OCs, pedidos B2B...</span>
+              <span className="text-slate-500 font-medium">Buscar productos, marcas, pedidos...</span>
               <kbd className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-600 font-mono border border-slate-200">
                 Ctrl + K
               </kbd>
@@ -473,11 +474,28 @@ function MainApp() {
 
             <button
               onClick={fetchAllHubData}
-              className="p-2 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-[#E7E8EB] rounded-xl transition shadow-sm"
+              className="p-2 text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-[#E7E8EB] rounded-xl transition shadow-xs"
               title="Refrescar datos en vivo"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-slate-900' : ''}`} />
             </button>
+
+            {/* User Profile Chip & Logout */}
+            <div className="flex items-center gap-2 pl-2 border-l border-[#E7E8EB]">
+              <div className="hidden md:flex flex-col text-right">
+                <span className="text-xs font-bold text-slate-900">{user?.fullName || 'Usuario'}</span>
+                <span className="text-[10px] text-slate-500 font-mono font-semibold">
+                  {user?.role === 'ADMIN' ? 'Super Admin' : 'Comercial B2B'}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-slate-500 hover:text-rose-600 bg-white hover:bg-rose-50 border border-[#E7E8EB] hover:border-rose-200 rounded-xl transition shadow-xs"
+                title="Cerrar Sesión"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -591,7 +609,7 @@ function MainApp() {
             <div className="text-center py-28 space-y-3">
               <div className="w-10 h-10 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin mx-auto" />
               <p className="text-xs text-slate-500 font-medium tracking-wide">
-                Cargando K-Beauty Product Hub...
+                Cargando Product Hub...
               </p>
             </div>
           ) : (
@@ -754,7 +772,9 @@ function MainApp() {
 export default function App() {
   return (
     <ToastProvider>
-      <MainApp />
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
     </ToastProvider>
   )
 }

@@ -149,7 +149,7 @@ export default function CommandPalette({
           {matchedBrands.length > 0 && (
             <div>
               <div className="text-[10px] font-bold text-[#6B6E75] uppercase tracking-wider px-3 mb-1.5 font-mono">
-                Marcas Coreanas ({matchedBrands.length})
+                Marcas & Fabricantes ({matchedBrands.length})
               </div>
               <div className="space-y-1">
                 {matchedBrands.map((b) => (

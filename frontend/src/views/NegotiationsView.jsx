@@ -55,7 +55,7 @@ export default function NegotiationsView({
             <TrendingUp className="w-6 h-6 text-slate-800" /> Negociaciones Comerciales B2B
           </h2>
           <p className="text-xs text-[#6B6E75] mt-1">
-            Gestión de acuerdos de distribución y condiciones comerciales con fabricantes coreanos.
+            Gestión de acuerdos de distribución y condiciones comerciales con fabricantes y proveedores.
           </p>
         </div>
 

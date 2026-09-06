@@ -41,14 +41,13 @@ export default function DashboardView({
       <div className="relative overflow-hidden rounded-3xl liquid-glass p-8 sm:p-10 shadow-sm border border-[#E7E8EB]">
         <div className="relative z-10 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium chrome-badge mb-4">
-            <Sparkles className="w-3.5 h-3.5 text-slate-700" /> K-BEAUTY CLINICAL HUB • CORE OS
+            <Sparkles className="w-3.5 h-3.5 text-slate-700" /> PRODUCT HUB • PANEL DE CONTROL
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#17181B] tracking-tight leading-tight font-display">
-            Gestión Inteligente del Ciclo de Vida de <span className="chrome-gradient-text">Skincare Coreano</span>
+            Catálogo Maestro & <span className="chrome-gradient-text">Gestión Comercial B2B</span>
           </h1>
           <p className="text-[#6B6E75] text-xs sm:text-sm mt-3 leading-relaxed max-w-2xl font-normal">
-            Orquestación integral de extremo a extremo: prospección en Seúl, compras FOB/DDP,
-            catalogación idempotente, enriquecimiento IA de fórmulas INCI y publicación multicanal.
+            Administración centralizada de productos, edición de precios y stock, cotizaciones mayoristas y exportaciones en tiempo real.
           </p>
         </div>
       </div>
@@ -314,7 +313,7 @@ export default function DashboardView({
                   <Sparkles className="w-3.5 h-3.5 text-purple-600" /> Enrichment Agent
                 </div>
                 <p className="text-[11px] text-[#6B6E75]">
-                  OCR de infografías coreanas y traducción de beneficios.
+                  Extracción de texto técnico y estructuración de beneficios.
                 </p>
               </div>
 

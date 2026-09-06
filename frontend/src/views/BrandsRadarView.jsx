@@ -47,7 +47,7 @@ export default function BrandsRadarView({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-extrabold text-[#17181B] flex items-center gap-2.5 font-display">
-            <Layers className="w-6 h-6 text-slate-800" /> Radar de Marcas Coreanas
+            <Layers className="w-6 h-6 text-slate-800" /> Directorio de Marcas & Fabricantes
           </h2>
           <p className="text-xs text-[#6B6E75] mt-1">
             Monitoreo y gestión de marcas desde la prospección inicial hasta la incorporación comercial.
