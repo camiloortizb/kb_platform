@@ -22,7 +22,8 @@ import {
   X,
   Plus,
   ShieldCheck,
-  Building2
+  Building2,
+  SlidersHorizontal
 } from 'lucide-react'
 
 // Views
@@ -38,12 +39,17 @@ import PublicationsView from './views/PublicationsView'
 import AiAgentsView from './views/AiAgentsView'
 import ActivityLogView from './views/ActivityLogView'
 import B2BOrdersView from './views/B2BOrdersView'
+import SettingsView from './views/SettingsView'
 
-// Components
+// Services & Components
+import { productService } from './services/productService'
+import { b2bService } from './services/b2bService'
+import { ToastProvider, useToast } from './components/ToastContainer'
 import CommandPalette from './components/CommandPalette'
 import ProductDetailModal from './components/ProductDetailModal'
 
-export default function App() {
+function MainApp() {
+  const { addToast } = useToast()
   const [currentView, setCurrentView] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -135,6 +141,7 @@ export default function App() {
     } catch (err) {
       console.error('Error fetching Hub data:', err)
       setError(err.message || 'Error al conectar con Supabase')
+      addToast('Error al conectar con Supabase: ' + err.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -172,38 +179,15 @@ export default function App() {
   // 1. Live Product & Pricing Save Handler
   const handleSaveProduct = async (productId, updatedFields) => {
     try {
-      const { data, error: err } = await supabase
-        .from('products')
-        .update(updatedFields)
-        .eq('id', productId)
-        .select()
-        .single()
-
-      if (err) throw err
-
-      // Update local state
+      const data = await productService.updateProduct(productId, updatedFields)
       setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, ...data } : p)))
       if (selectedProduct && selectedProduct.id === productId) {
         setSelectedProduct({ ...selectedProduct, ...data })
       }
-
-      // Log activity
-      await supabase.from('activity_log').insert({
-        actor: 'BRAND_MANAGER',
-        action: 'PRODUCT_B2B_UPDATED',
-        entity_type: 'product',
-        entity_id: String(productId),
-        metadata: {
-          name: updatedFields.name,
-          wholesale_price: updatedFields.wholesale_price,
-          retail_price: updatedFields.retail_price,
-          stock_quantity: updatedFields.stock_quantity
-        }
-      })
-
+      addToast(`Ficha de "${data.name}" actualizada con éxito.`, 'success')
       return data
     } catch (err) {
-      console.error('Error updating product:', err)
+      addToast('Error al actualizar producto: ' + err.message, 'error')
       throw err
     }
   }
@@ -211,47 +195,13 @@ export default function App() {
   // 2. B2B Order Save Handler
   const handleSaveB2BOrder = async (orderData, itemsData) => {
     try {
-      const { data: newOrder, error: orderErr } = await supabase
-        .from('b2b_orders')
-        .insert(orderData)
-        .select()
-        .single()
-
-      if (orderErr) throw orderErr
-
-      const itemsWithOrderId = itemsData.map((it) => ({
-        ...it,
-        order_id: newOrder.id
-      }))
-
-      const { data: newItems, error: itemsErr } = await supabase
-        .from('b2b_order_items')
-        .insert(itemsWithOrderId)
-        .select()
-
-      if (itemsErr) throw itemsErr
-
-      // Update local state
-      setB2bOrders((prev) => [newOrder, ...prev])
-      setB2bOrderItems((prev) => [...(newItems || []), ...prev])
-
-      // Log activity
-      await supabase.from('activity_log').insert({
-        actor: 'COMMERCIAL_MGR',
-        action: 'B2B_ORDER_CREATED',
-        entity_type: 'b2b_order',
-        entity_id: String(newOrder.id),
-        metadata: {
-          order_number: newOrder.order_number,
-          client_name: newOrder.client_name,
-          total_amount: newOrder.total_amount,
-          items_count: itemsData.length
-        }
-      })
-
-      return newOrder
+      const { order, items } = await b2bService.createOrder(orderData, itemsData)
+      setB2bOrders((prev) => [order, ...prev])
+      setB2bOrderItems((prev) => [...items, ...prev])
+      addToast(`Pedido B2B ${order.order_number} registrado exitosamente.`, 'success')
+      return order
     } catch (err) {
-      console.error('Error saving B2B order:', err)
+      addToast('Error al guardar pedido B2B: ' + err.message, 'error')
       throw err
     }
   }
@@ -259,62 +209,29 @@ export default function App() {
   // 3. Update B2B Order Status Handler
   const handleUpdateB2BOrderStatus = async (orderId, newStatus) => {
     try {
-      const { data, error: err } = await supabase
-        .from('b2b_orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', orderId)
-        .select()
-        .single()
-
-      if (err) throw err
-
+      await b2bService.updateOrderStatus(orderId, newStatus)
       setB2bOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)))
-
-      await supabase.from('activity_log').insert({
-        actor: 'COMMERCIAL_MGR',
-        action: 'B2B_ORDER_STATUS_CHANGED',
-        entity_type: 'b2b_order',
-        entity_id: String(orderId),
-        metadata: { status: newStatus }
-      })
+      addToast(`Estado de orden actualizado a ${newStatus}.`, 'success')
     } catch (err) {
-      console.error('Error updating order status:', err)
-      alert('Error: ' + err.message)
+      addToast('Error al actualizar estado de orden: ' + err.message, 'error')
     }
   }
 
   // 4. Save B2B Client Handler
   const handleSaveB2BClient = async (clientData) => {
     try {
-      const { data, error: err } = await supabase
-        .from('b2b_clients')
-        .insert(clientData)
-        .select()
-        .single()
-
-      if (err) throw err
-
+      const data = await b2bService.createClient(clientData)
       setB2bClients((prev) => [...prev, data])
-
-      await supabase.from('activity_log').insert({
-        actor: 'COMMERCIAL_MGR',
-        action: 'B2B_CLIENT_REGISTERED',
-        entity_type: 'b2b_client',
-        entity_id: String(data.id),
-        metadata: { company_name: data.company_name, tax_id: data.tax_id }
-      })
-
+      addToast(`Cliente "${data.company_name}" registrado exitosamente.`, 'success')
       return data
     } catch (err) {
-      console.error('Error saving B2B client:', err)
-      alert('Error: ' + err.message)
+      addToast('Error al registrar cliente: ' + err.message, 'error')
     }
   }
 
   // 5. Promote Discovered Product to Commercial Catalog
   const handlePromoteToCommercial = async (discItem) => {
     try {
-      const bName = brandMap[discItem.brand_id] || 'K-Beauty'
       const { data: newP, error: pErr } = await supabase
         .from('products')
         .insert({
@@ -362,14 +279,13 @@ export default function App() {
       })
 
       await fetchAllHubData()
-      alert(`Producto "${newP.name}" incorporado con éxito al Catálogo Comercial.`)
+      addToast(`Producto "${newP.name}" incorporado al catálogo comercial.`, 'success')
     } catch (err) {
-      console.error('Error promoting product:', err)
-      alert('Error al incorporar producto: ' + err.message)
+      addToast('Error al incorporar producto: ' + err.message, 'error')
     }
   }
 
-  // 6. Confirm Purchase Order -> Move Items to Catalog
+  // 6. Confirm Purchase Order
   const handleConfirmPo = async (po) => {
     try {
       await supabase
@@ -386,62 +302,31 @@ export default function App() {
       })
 
       await fetchAllHubData()
-      alert(`Orden de Compra ${po.po_number} confirmada exitosamente.`)
+      addToast(`Orden de Compra ${po.po_number} confirmada exitosamente.`, 'success')
     } catch (err) {
-      console.error('Error confirming PO:', err)
-      alert('Error: ' + err.message)
+      addToast('Error al confirmar OC: ' + err.message, 'error')
     }
   }
 
-  // 7. Approve Product in Human-in-the-Loop Quality Control
+  // 7. Approve Product
   const handleApproveProduct = async (productId) => {
     try {
-      await supabase
-        .from('products')
-        .update({
-          lifecycle_stage: 'READY_TO_PUBLISH',
-          verification_status: 'APROBADO_BRAND_MANAGER'
-        })
-        .eq('id', productId)
-
-      await supabase.from('activity_log').insert({
-        actor: 'BRAND_MANAGER',
-        action: 'QUALITY_CONTROL_APPROVED',
-        entity_type: 'product',
-        entity_id: String(productId),
-        metadata: { lifecycle_stage: 'READY_TO_PUBLISH' }
-      })
-
+      await productService.approveProduct(productId)
       await fetchAllHubData()
-      alert('Ficha técnica y claims aprobados exitosamente.')
+      addToast('Ficha técnica y claims aprobados exitosamente.', 'success')
     } catch (err) {
-      console.error('Error approving product:', err)
+      addToast('Error al aprobar producto: ' + err.message, 'error')
     }
   }
 
-  // 8. Return Product for Revision
+  // 8. Return Product
   const handleReturnProduct = async (productId, reason) => {
     try {
-      await supabase
-        .from('products')
-        .update({
-          lifecycle_stage: 'CATALOGING',
-          rejection_reason: reason
-        })
-        .eq('id', productId)
-
-      await supabase.from('activity_log').insert({
-        actor: 'BRAND_MANAGER',
-        action: 'QUALITY_CONTROL_RETURNED',
-        entity_type: 'product',
-        entity_id: String(productId),
-        metadata: { reason }
-      })
-
+      await productService.returnProduct(productId, reason)
       await fetchAllHubData()
-      alert('Producto devuelto a catalogación con observaciones.')
+      addToast('Producto devuelto a catalogación con observaciones.', 'warning')
     } catch (err) {
-      console.error('Error returning product:', err)
+      addToast('Error al devolver producto: ' + err.message, 'error')
     }
   }
 
@@ -470,26 +355,65 @@ export default function App() {
       })
 
       await fetchAllHubData()
-      alert(`Agente ${agentId} ejecutado con éxito. Datos y telemetría actualizados.`)
+      addToast(`Agente ${agentId} ejecutado con éxito. Datos actualizados.`, 'success')
     } catch (err) {
-      console.error('Error running agent:', err)
+      addToast('Error al ejecutar agente: ' + err.message, 'error')
     }
   }
 
-  // Navigation Items
-  const navItems = [
-    { key: 'dashboard', label: 'Dashboard Hub', icon: LayoutDashboard },
-    { key: 'b2b_orders', label: 'Ventas & Pedidos B2B', icon: ShoppingCart, badge: b2bOrders.length, highlight: true },
-    { key: 'products', label: 'Catálogo Comercial', icon: Package },
-    { key: 'pipeline', label: 'Pipeline Kanban', icon: Kanban },
-    { key: 'approvals', label: 'Aprobaciones', icon: AlertCircle, badge: products.filter((p) => p.lifecycle_stage === 'APPROVAL').length, alert: true },
-    { key: 'brands', label: 'Radar de Marcas', icon: Layers, badge: brands.filter((b) => b.status === 'RADAR').length },
-    { key: 'discovery', label: 'Discovery (Scraping)', icon: Globe, badge: discoveredProducts.length },
-    { key: 'negotiations', label: 'Negociaciones B2B', icon: TrendingUp },
-    { key: 'purchase_orders', label: 'Órdenes de Compra', icon: ShoppingCart, badge: purchaseOrders.filter((po) => po.status === 'CONFIRMED').length },
-    { key: 'publications', label: 'Publicaciones', icon: CheckCircle2 },
-    { key: 'ai_agents', label: 'Agentes de IA', icon: Cpu },
-    { key: 'activity_log', label: 'Trazabilidad (Logs)', icon: Activity }
+  // ============================================================================
+  // CONSOLIDATED 4-SEGMENT NAVIGATION STRUCTURE
+  // ============================================================================
+  const navSections = [
+    {
+      title: '1. Catálogo & Control Maestro',
+      items: [
+        { key: 'dashboard', label: 'Dashboard Hub', icon: LayoutDashboard },
+        { key: 'products', label: 'Catálogo Comercial', icon: Package },
+        { key: 'pipeline', label: 'Pipeline Kanban', icon: Kanban },
+        {
+          key: 'approvals',
+          label: 'Aprobaciones',
+          icon: AlertCircle,
+          badge: products.filter((p) => p.lifecycle_stage === 'APPROVAL').length,
+          alert: true
+        }
+      ]
+    },
+    {
+      title: '2. Ventas & Pedidos B2B',
+      items: [
+        {
+          key: 'b2b_orders',
+          label: 'Cotizador & Pedidos B2B',
+          icon: ShoppingCart,
+          badge: b2bOrders.length,
+          highlight: true
+        }
+      ]
+    },
+    {
+      title: '3. Abastecimiento Internacional',
+      items: [
+        { key: 'brands', label: 'Radar de Marcas', icon: Layers, badge: brands.filter((b) => b.status === 'RADAR').length },
+        { key: 'discovery', label: 'Discovery (Scraping)', icon: Globe, badge: discoveredProducts.length },
+        { key: 'negotiations', label: 'Negociaciones B2B', icon: TrendingUp },
+        {
+          key: 'purchase_orders',
+          label: 'Órdenes de Compra',
+          icon: Package,
+          badge: purchaseOrders.filter((po) => po.status === 'CONFIRMED').length
+        }
+      ]
+    },
+    {
+      title: '4. Canales & Trazabilidad',
+      items: [
+        { key: 'publications', label: 'Canales E-Commerce', icon: CheckCircle2 },
+        { key: 'ai_agents', label: 'Agentes de IA', icon: Cpu },
+        { key: 'activity_log', label: 'Trazabilidad (Logs)', icon: Activity }
+      ]
+    }
   ]
 
   return (
@@ -566,71 +490,97 @@ export default function App() {
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <div className="space-y-6">
-            <div className="flex items-center justify-between lg:hidden mb-4">
+          <div className="space-y-4 overflow-y-auto pr-1">
+            <div className="flex items-center justify-between lg:hidden mb-2">
               <span className="text-sm font-bold text-slate-900">Menú de Navegación</span>
               <button onClick={() => setSidebarOpen(false)} className="text-slate-500">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const IconComp = item.icon
-                const isActive = currentView === item.key
+            {/* Render Consolidated Sections */}
+            {navSections.map((sec, idx) => (
+              <div key={idx} className="space-y-1">
+                <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  {sec.title}
+                </div>
+                {sec.items.map((item) => {
+                  const IconComp = item.icon
+                  const isActive = currentView === item.key
 
-                return (
-                  <button
-                    key={item.key}
-                    onClick={() => {
-                      setCurrentView(item.key)
-                      setSidebarOpen(false)
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                      isActive
-                        ? 'bg-[#17181B] text-white shadow-sm'
-                        : 'text-[#6B6E75] hover:text-[#17181B] hover:bg-white/80'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <IconComp
-                        className={`w-4 h-4 transition ${
-                          isActive ? 'text-white' : 'text-slate-400'
-                        }`}
-                      />
-                      <span className="tracking-tight">{item.label}</span>
-                    </div>
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => {
+                        setCurrentView(item.key)
+                        setSidebarOpen(false)
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                        isActive
+                          ? 'bg-[#17181B] text-white shadow-sm'
+                          : 'text-[#6B6E75] hover:text-[#17181B] hover:bg-white/80'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <IconComp
+                          className={`w-4 h-4 transition ${
+                            isActive ? 'text-white' : 'text-slate-400'
+                          }`}
+                        />
+                        <span className="tracking-tight">{item.label}</span>
+                      </div>
 
-                    {item.badge > 0 && (
-                      <span
-                        className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
-                          isActive
-                            ? 'bg-white/20 text-white'
-                            : item.alert
-                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                            : 'bg-slate-100 text-slate-600 border border-slate-200'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </nav>
+                      {item.badge > 0 && (
+                        <span
+                          className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : item.alert
+                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
           </div>
 
-          {/* Sidebar Footer Info */}
-          <div className="p-3.5 rounded-2xl bg-white border border-[#E7E8EB] text-[11px] text-slate-500 space-y-1.5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Estado Live</span>
-              <div className="flex items-center gap-1.5 text-emerald-600 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-[10px] font-mono">Supabase Online</span>
+          {/* Sidebar Footer Info & Settings Trigger */}
+          <div className="pt-3 border-t border-[#E7E8EB] space-y-2">
+            <button
+              onClick={() => {
+                setCurrentView('settings')
+                setSidebarOpen(false)
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                currentView === 'settings'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white border border-[#E7E8EB] text-slate-700 hover:text-black hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Configuración Global</span>
               </div>
-            </div>
-            <div className="text-slate-800 font-mono text-[10px] font-semibold">
-              {products.length.toLocaleString()} productos comercializados
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            </button>
+
+            <div className="p-3 rounded-2xl bg-white border border-[#E7E8EB] text-[11px] text-slate-500 space-y-1 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Estado Live</span>
+                <div className="flex items-center gap-1 text-emerald-600 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-[10px] font-mono">Supabase Online</span>
+                </div>
+              </div>
+              <div className="text-slate-800 font-mono text-[10px] font-semibold">
+                {products.length.toLocaleString()} productos sincronizados
+              </div>
             </div>
           </div>
         </aside>
@@ -654,6 +604,37 @@ export default function App() {
                   purchaseOrders={purchaseOrders}
                   discoveredCount={discoveredProducts.length}
                   onNavigate={(v) => setCurrentView(v)}
+                  onSelectProduct={(p) => setSelectedProduct(p)}
+                />
+              )}
+
+              {currentView === 'products' && (
+                <ProductsView
+                  products={products}
+                  brands={brands}
+                  imagesByProduct={imagesByProduct}
+                  dimensionsByProduct={dimensionsByProduct}
+                  onSelectProduct={(p) => setSelectedProduct(p)}
+                />
+              )}
+
+              {currentView === 'pipeline' && (
+                <PipelineKanbanView
+                  products={products}
+                  brands={brands}
+                  imagesByProduct={imagesByProduct}
+                  onSelectProduct={(p) => setSelectedProduct(p)}
+                  onMoveStage={(prodId, newStg) => handleApproveProduct(prodId)}
+                />
+              )}
+
+              {currentView === 'approvals' && (
+                <ApprovalsView
+                  products={products}
+                  brands={brands}
+                  imagesByProduct={imagesByProduct}
+                  onApproveProduct={handleApproveProduct}
+                  onReturnProduct={handleReturnProduct}
                   onSelectProduct={(p) => setSelectedProduct(p)}
                 />
               )}
@@ -709,43 +690,12 @@ export default function App() {
                 />
               )}
 
-              {currentView === 'products' && (
-                <ProductsView
-                  products={products}
-                  brands={brands}
-                  imagesByProduct={imagesByProduct}
-                  dimensionsByProduct={dimensionsByProduct}
-                  onSelectProduct={(p) => setSelectedProduct(p)}
-                />
-              )}
-
-              {currentView === 'pipeline' && (
-                <PipelineKanbanView
-                  products={products}
-                  brands={brands}
-                  imagesByProduct={imagesByProduct}
-                  onSelectProduct={(p) => setSelectedProduct(p)}
-                  onMoveStage={(prodId, newStg) => handleApproveProduct(prodId)}
-                />
-              )}
-
-              {currentView === 'approvals' && (
-                <ApprovalsView
-                  products={products}
-                  brands={brands}
-                  imagesByProduct={imagesByProduct}
-                  onApproveProduct={handleApproveProduct}
-                  onReturnProduct={handleReturnProduct}
-                  onSelectProduct={(p) => setSelectedProduct(p)}
-                />
-              )}
-
               {currentView === 'publications' && (
                 <PublicationsView
                   products={products}
                   brands={brands}
                   productChannels={productChannels}
-                  onPublishChannel={() => alert('Sincronización de canal ejecutada')}
+                  onPublishChannel={() => addToast('Sincronización de canal ejecutada.', 'info')}
                 />
               )}
 
@@ -758,6 +708,10 @@ export default function App() {
 
               {currentView === 'activity_log' && (
                 <ActivityLogView activityLogs={activityLogs} />
+              )}
+
+              {currentView === 'settings' && (
+                <SettingsView />
               )}
             </>
           )}
@@ -794,5 +748,13 @@ export default function App() {
         />
       )}
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <MainApp />
+    </ToastProvider>
   )
 }

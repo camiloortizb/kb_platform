@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Tag
 } from 'lucide-react'
+import { useToast } from '../components/ToastContainer'
 
 export default function ApprovalsView({
   products = [],
@@ -21,6 +22,7 @@ export default function ApprovalsView({
   onReturnProduct,
   onSelectProduct
 }) {
+  const { addToast } = useToast()
   const [filterBrand, setFilterBrand] = useState('ALL')
   const [search, setSearch] = useState('')
   const [returnReason, setReturnReason] = useState('')
@@ -48,7 +50,7 @@ export default function ApprovalsView({
 
   const handleConfirmReturn = (productId) => {
     if (!returnReason.trim()) {
-      alert('Por favor especifica un motivo de devolución para el catalogador.')
+      addToast('Por favor especifica un motivo de devolución para el catalogador.', 'warning')
       return
     }
     onReturnProduct(productId, returnReason)

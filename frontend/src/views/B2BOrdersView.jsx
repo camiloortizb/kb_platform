@@ -29,6 +29,7 @@ import {
   FileText,
   Copy
 } from 'lucide-react'
+import { useToast } from '../components/ToastContainer'
 
 export default function B2BOrdersView({
   products = [],
@@ -42,6 +43,7 @@ export default function B2BOrdersView({
   onSaveClient,
   onSelectProduct
 }) {
+  const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState('orders') // 'orders', 'builder', 'exports', 'clients'
   const [searchOrder, setSearchOrder] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
@@ -190,11 +192,11 @@ export default function B2BOrdersView({
 
   const handleSaveOrderSubmit = async (status = 'CONFIRMED') => {
     if (!selectedClient && !clientForm.company_name) {
-      alert('Por favor selecciona un cliente mayorista o crea uno nuevo.')
+      addToast('Por favor selecciona un cliente mayorista o crea uno nuevo.', 'warning')
       return
     }
     if (orderItemsCart.length === 0) {
-      alert('Por favor agrega al menos un producto al pedido.')
+      addToast('Por favor agrega al menos un producto al pedido.', 'warning')
       return
     }
 
@@ -244,15 +246,14 @@ export default function B2BOrdersView({
         await onSaveOrder(orderData, itemsData)
       }
 
-      setOrderSuccessMessage(`¡Orden ${orderNumber} guardada exitosamente con estado ${status}!`)
+      addToast(`¡Orden ${orderNumber} guardada exitosamente con estado ${status}!`, 'success')
       setOrderItemsCart([])
       setOrderNotes('')
       setTimeout(() => {
-        setOrderSuccessMessage(null)
         setActiveTab('orders')
-      }, 2000)
+      }, 1500)
     } catch (err) {
-      alert('Error al guardar la orden: ' + err.message)
+      addToast('Error al guardar la orden: ' + err.message, 'error')
     } finally {
       setSavingOrder(false)
     }
@@ -1248,7 +1249,7 @@ export default function B2BOrdersView({
               <button
                 onClick={async () => {
                   if (!clientForm.company_name.trim()) {
-                    alert('Ingresa el nombre de la empresa.')
+                    addToast('Ingresa el nombre de la empresa.', 'warning')
                     return
                   }
                   if (onSaveClient) {

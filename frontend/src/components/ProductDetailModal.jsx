@@ -22,6 +22,7 @@ import {
   Package,
   Sliders
 } from 'lucide-react'
+import { useToast } from './ToastContainer'
 
 export default function ProductDetailModal({
   product,
@@ -33,6 +34,7 @@ export default function ProductDetailModal({
   onUpdateStage,
   onSaveProduct
 }) {
+  const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState('commercial') // 'commercial', 'overview', 'inci', 'usage', 'channels'
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [copiedInci, setCopiedInci] = useState(false)
@@ -100,7 +102,7 @@ export default function ProductDetailModal({
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2500)
     } catch (err) {
-      alert('Error al guardar el producto: ' + err.message)
+      addToast('Error al guardar el producto: ' + err.message, 'error')
     } finally {
       setSaving(false)
     }
