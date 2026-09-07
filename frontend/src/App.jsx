@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from './lib/supabase'
-import * as XLSX from 'xlsx'
 import {
   LayoutDashboard,
   Layers,
@@ -14,18 +13,11 @@ import {
   Cpu,
   Activity,
   Search,
-  Download,
   RefreshCw,
-  Sparkles,
-  Command,
   Menu,
   X,
-  Plus,
-  ShieldCheck,
-  Building2,
   SlidersHorizontal,
-  LogOut,
-  User
+  LogOut
 } from 'lucide-react'
 
 // Views
@@ -53,7 +45,7 @@ import CommandPalette from './components/CommandPalette'
 import ProductDetailModal from './components/ProductDetailModal'
 
 function MainApp() {
-  const { user, isAuthenticated, logout, isAdmin, isCommercial } = useAuth()
+  const { user, logout } = useAuth()
   const { addToast } = useToast()
   const [currentView, setCurrentView] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -84,17 +76,7 @@ function MainApp() {
   // Modal State
   const [selectedProduct, setSelectedProduct] = useState(null)
 
-  // If not authenticated, render Login Screen
-  if (!isAuthenticated) {
-    return <LoginView />
-  }
-
-  // Load all tables from Supabase when authenticated
-  useEffect(() => {
-    fetchAllHubData()
-  }, [])
-
-  async function fetchAllHubData() {
+  const fetchAllHubData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -155,7 +137,12 @@ function MainApp() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [addToast])
+
+  // Load all tables from Supabase on mount
+  useEffect(() => {
+    fetchAllHubData()
+  }, [fetchAllHubData])
 
   // Lookups
   const brandMap = useMemo(() => {
@@ -605,6 +592,12 @@ function MainApp() {
 
         {/* View Main Content Area */}
         <main className="flex-1 min-w-0">
+          {error && (
+            <div className="mb-4 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between shadow-xs">
+              <span>{error}</span>
+              <button onClick={() => setError(null)} className="font-bold underline ml-2 hover:text-rose-950">Cerrar</button>
+            </div>
+          )}
           {loading && products.length === 0 ? (
             <div className="text-center py-28 space-y-3">
               <div className="w-10 h-10 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin mx-auto" />
@@ -642,7 +635,7 @@ function MainApp() {
                   brands={brands}
                   imagesByProduct={imagesByProduct}
                   onSelectProduct={(p) => setSelectedProduct(p)}
-                  onMoveStage={(prodId, newStg) => handleApproveProduct(prodId)}
+                  onMoveStage={(prodId) => handleApproveProduct(prodId)}
                 />
               )}
 
@@ -769,11 +762,30 @@ function MainApp() {
   )
 }
 
+function AppRouter() {
+  const { isAuthenticated, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F7] flex flex-col justify-center items-center">
+        <div className="w-10 h-10 rounded-full border-2 border-slate-300 border-t-slate-900 animate-spin" />
+        <p className="text-xs text-slate-500 font-medium tracking-wide mt-3 font-mono">Iniciando sesión segura...</p>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <LoginView />
+  }
+
+  return <MainApp />
+}
+
 export default function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <MainApp />
+        <AppRouter />
       </AuthProvider>
     </ToastProvider>
   )
