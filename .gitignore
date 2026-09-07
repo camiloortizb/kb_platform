@@ -14,10 +14,12 @@ dist/
 dist-ssr/
 build/
 
-# Environment Variables
+# Environment Variables & Secrets
 .env
-.env.local
-.env.*.local
+.env*
+*.env
+*.ENV
+*.env.local
 
 # Logs
 logs/

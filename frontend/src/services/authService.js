@@ -3,15 +3,14 @@ import { supabase } from '../lib/supabase'
 
 const SESSION_STORAGE_KEY = 'kbeauty_auth_session_v1'
 
-// Default pre-provisioned enterprise accounts with 12-round Bcrypt hashes
+// Pre-provisioned enterprise accounts with one-way Bcrypt hashes (cost factor 10)
 const PRESET_ACCOUNTS = [
   {
     id: 'usr_admin_01',
     email: 'admin@kbeautyhub.com',
     fullName: 'Camilo Ortiz',
     role: 'ADMIN', // Super Admin: Total Access
-    // Bcrypt hash for 'Admin2026!*'
-    passwordHash: bcrypt.hashSync('Admin2026!*', 10),
+    passwordHash: '$2b$10$J4R/0Yd11elASibgWo7MhObmO5wluz0Ur/ONfxGjJlZchXIWverGm',
     department: 'Dirección General & Operaciones',
     isActive: true
   },
@@ -20,8 +19,7 @@ const PRESET_ACCOUNTS = [
     email: 'ventas@kbeautyhub.com',
     fullName: 'Equipo Comercial B2B',
     role: 'COMMERCIAL', // Commercial: Catalog, Quotes, Orders, Clients
-    // Bcrypt hash for 'Ventas2026!*'
-    passwordHash: bcrypt.hashSync('Ventas2026!*', 10),
+    passwordHash: '$2b$10$lbzYQGgU9.eqrQf99u7SbuLkcAR1woBuSVqpz80jd4C5n9whAUps2',
     department: 'Ventas Mayoristas',
     isActive: true
   },
@@ -30,8 +28,7 @@ const PRESET_ACCOUNTS = [
     email: 'producto@kbeautyhub.com',
     fullName: 'Gestión de Producto',
     role: 'CATALOGER', // Cataloger: Products, INCI, Approvals
-    // Bcrypt hash for 'Producto2026!*'
-    passwordHash: bcrypt.hashSync('Producto2026!*', 10),
+    passwordHash: '$2b$10$aFrLhzz/KdClzLacBexyIuaNmg1V7ujMKnligvW7R4scqB6TnZuiS',
     department: 'Catalogación & Calidad',
     isActive: true
   }
@@ -88,7 +85,7 @@ export const authService = {
       fullName: account.fullName,
       role: account.role,
       department: account.department,
-      token: 'jwt_' + Math.random().toString(36).substring(2) + Date.now().toString(36),
+      token: 'auth_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).substring(2)) + '_' + Date.now(),
       expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 7 // 7 days session
     }
 
@@ -126,7 +123,7 @@ export const authService = {
         return null
       }
       return session
-    } catch (e) {
+    } catch {
       localStorage.removeItem(SESSION_STORAGE_KEY)
       return null
     }
@@ -144,7 +141,7 @@ export const authService = {
           entity_id: session.email,
           metadata: { timestamp: new Date().toISOString() }
         })
-      } catch (e) {
+      } catch {
         // ignore
       }
     }

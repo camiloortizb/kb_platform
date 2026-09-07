@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://rykfqebqdvunwxqkheex.supabase.co').rstrip('/')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ5a2ZxZWJxZHZ1bnd4cWtoZWV4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODIyOTg1OSwiZXhwIjoyMTAzODA1ODU5fQ.NCpBUHYAUSME_EjCeo6hyNGv4LkpLg9B6XCqY4LkYBM')
-SUPABASE_PAT = os.getenv('SUPABASE_PAT', 'sbp_ee207100cbe762916e60181d68fc47f452633ab2')
-PROJECT_REF = 'rykfqebqdvunwxqkheex'
+SUPABASE_KEY = os.getenv('SUPABASE_KEY', '')
+SUPABASE_PAT = os.getenv('SUPABASE_PAT', '')
+PROJECT_REF = os.getenv('SUPABASE_PROJECT_REF', 'rykfqebqdvunwxqkheex')
 
 client = httpx.Client(timeout=60.0)
 

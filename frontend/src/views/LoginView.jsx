@@ -6,7 +6,6 @@ import {
   EyeOff,
   ShieldCheck,
   ArrowRight,
-  Sparkles,
   Building2
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -38,9 +37,8 @@ export default function LoginView() {
     }
   }
 
-  const handleQuickFill = (demoEmail, demoPw) => {
-    setEmail(demoEmail)
-    setPassword(demoPw)
+  const handleQuickFillEmail = (corporateEmail) => {
+    setEmail(corporateEmail)
   }
 
   return (
@@ -132,14 +130,15 @@ export default function LoginView() {
         {/* Preset Access Credentials Card */}
         <div className="pt-4 border-t border-[#E7E8EB] space-y-2">
           <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block text-center">
-            Cuentas Corporativas Iniciales
+            Seleccionar Cuenta Corporativa
           </span>
 
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => handleQuickFill('admin@kbeautyhub.com', 'Admin2026!*')}
+              onClick={() => handleQuickFillEmail('admin@kbeautyhub.com')}
               className="p-2.5 bg-[#F8F8F9] hover:bg-slate-100 rounded-xl border border-[#E7E8EB] text-left transition"
+              title="Click para autocompletar correo corporativo"
             >
               <div className="font-bold text-slate-900 text-[11px] flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Super Admin
@@ -149,8 +148,9 @@ export default function LoginView() {
 
             <button
               type="button"
-              onClick={() => handleQuickFill('ventas@kbeautyhub.com', 'Ventas2026!*')}
+              onClick={() => handleQuickFillEmail('ventas@kbeautyhub.com')}
               className="p-2.5 bg-[#F8F8F9] hover:bg-slate-100 rounded-xl border border-[#E7E8EB] text-left transition"
+              title="Click para autocompletar correo corporativo"
             >
               <div className="font-bold text-slate-900 text-[11px] flex items-center gap-1">
                 <Building2 className="w-3.5 h-3.5 text-blue-600" /> Comercial B2B
