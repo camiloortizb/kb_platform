@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
   Search,
   Package,
@@ -6,9 +6,9 @@ import {
   ShoppingCart,
   TrendingUp,
   ArrowRight,
-  Sparkles,
-  X
+  Sparkles
 } from 'lucide-react'
+import { buildBrandMap } from '../lib/brandUtils'
 
 export default function CommandPalette({
   isOpen,
@@ -21,40 +21,37 @@ export default function CommandPalette({
   onNavigate
 }) {
   const [query, setQuery] = useState('')
-  const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef(null)
 
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 50)
-      setQuery('')
-      setSelectedIndex(0)
+      const timer = setTimeout(() => inputRef.current?.focus(), 50)
+      return () => clearTimeout(timer)
     }
   }, [isOpen])
+
+  const handleClose = useCallback(() => {
+    setQuery('')
+    onClose()
+  }, [onClose])
 
   // Keyboard shortcut listener (Ctrl+K / Cmd+K)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        if (isOpen) onClose()
-        else {
-          // Handled in parent
-        }
+        if (isOpen) handleClose()
       } else if (e.key === 'Escape' && isOpen) {
-        onClose()
+        handleClose()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
+
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
   if (!isOpen) return null
-
-  const brandMap = brands.reduce((acc, b) => {
-    acc[b.id] = b.name
-    return acc
-  }, {})
 
   const q = query.toLowerCase().trim()
 
@@ -78,7 +75,17 @@ export default function CommandPalette({
     ? purchaseOrders.filter((po) => po.po_number?.toLowerCase().includes(q)).slice(0, 3)
     : []
 
-  const totalResults = [...matchedProducts, ...matchedBrands, ...matchedPos]
+  const matchedNegs = q
+    ? negotiations
+        .filter(
+          (n) =>
+            n.title?.toLowerCase().includes(q) ||
+            (brandMap[n.brand_id] || '').toLowerCase().includes(q)
+        )
+        .slice(0, 3)
+    : []
+
+  const totalResults = [...matchedProducts, ...matchedBrands, ...matchedPos, ...matchedNegs]
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-start justify-center pt-20 p-4 animate-fadeIn">
@@ -121,8 +128,8 @@ export default function CommandPalette({
                   <div
                     key={p.id}
                     onClick={() => {
-                      onSelectProduct && onSelectProduct(p)
-                      onClose()
+                      onSelectProduct?.(p)
+                      handleClose()
                     }}
                     className="p-2.5 rounded-2xl hover:bg-[#F8F8F9] flex items-center justify-between cursor-pointer transition group border border-transparent hover:border-[#E7E8EB]"
                   >
@@ -156,8 +163,8 @@ export default function CommandPalette({
                   <div
                     key={b.id}
                     onClick={() => {
-                      onNavigate && onNavigate('brands')
-                      onClose()
+                      onNavigate?.('brands')
+                      handleClose()
                     }}
                     className="p-2.5 rounded-2xl hover:bg-[#F8F8F9] flex items-center justify-between cursor-pointer transition group border border-transparent hover:border-[#E7E8EB]"
                   >
@@ -170,7 +177,7 @@ export default function CommandPalette({
                           {b.name}
                         </div>
                         <div className="text-[10px] text-[#6B6E75]">
-                          {b.status || 'ACTIVE'} • {b.country || 'Corea del Sur'}
+                          {b.status || 'ACTIVE'} • {b.country || 'Internacional'}
                         </div>
                       </div>
                     </div>
@@ -191,8 +198,8 @@ export default function CommandPalette({
                   <div
                     key={po.id}
                     onClick={() => {
-                      onNavigate && onNavigate('purchase_orders')
-                      onClose()
+                      onNavigate?.('purchase_orders')
+                      handleClose()
                     }}
                     className="p-2.5 rounded-2xl hover:bg-[#F8F8F9] flex items-center justify-between cursor-pointer transition group border border-transparent hover:border-[#E7E8EB]"
                   >
@@ -206,6 +213,41 @@ export default function CommandPalette({
                         </div>
                         <div className="text-[10px] text-[#6B6E75] font-mono">
                           Estado: {po.status} • Total: ${po.total_amount_usd} USD
+                        </div>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900 transition" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {matchedNegs.length > 0 && (
+            <div>
+              <div className="text-[10px] font-bold text-[#6B6E75] uppercase tracking-wider px-3 mb-1.5 font-mono">
+                Negociaciones ({matchedNegs.length})
+              </div>
+              <div className="space-y-1">
+                {matchedNegs.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => {
+                      onNavigate?.('negotiations')
+                      handleClose()
+                    }}
+                    className="p-2.5 rounded-2xl hover:bg-[#F8F8F9] flex items-center justify-between cursor-pointer transition group border border-transparent hover:border-[#E7E8EB]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-xs border border-slate-200">
+                        <TrendingUp className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-[#17181B] group-hover:text-black transition font-display">
+                          {n.title}
+                        </div>
+                        <div className="text-[10px] text-[#6B6E75] font-mono">
+                          {brandMap[n.brand_id]} • Estado: {n.status}
                         </div>
                       </div>
                     </div>

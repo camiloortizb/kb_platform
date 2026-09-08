@@ -1,16 +1,6 @@
-import React, { useState } from 'react'
-import {
-  Layers,
-  Sparkles,
-  Clock,
-  AlertCircle,
-  CheckCircle2,
-  Globe,
-  ShoppingCart,
-  ChevronRight,
-  Eye,
-  TrendingUp
-} from 'lucide-react'
+import React, { useMemo } from 'react'
+import { Layers, ChevronRight } from 'lucide-react'
+import { buildBrandMap } from '../lib/brandUtils'
 
 export default function PipelineKanbanView({
   products = [],
@@ -19,10 +9,7 @@ export default function PipelineKanbanView({
   onSelectProduct,
   onMoveStage
 }) {
-  const brandMap = brands.reduce((acc, b) => {
-    acc[b.id] = b.name
-    return acc
-  }, {})
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
   const columns = [
     { key: 'CATALOGING', title: 'Catalogación', tagClass: 'status-tag-catalog' },
@@ -98,9 +85,23 @@ export default function PipelineKanbanView({
                         <span className="font-mono text-slate-700">
                           {p.ean ? `EAN: ${p.ean.slice(-6)}` : `SKU: ${p.sku}`}
                         </span>
-                        <span className="text-slate-800 font-mono font-semibold">
-                          {p.completeness_score || 100}%
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-800 font-mono font-semibold">
+                            {p.completeness_score || 100}%
+                          </span>
+                          {onMoveStage && col.key !== 'PUBLISHED' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onMoveStage(p.id)
+                              }}
+                              className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-indigo-600 transition"
+                              title="Avanzar etapa"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )

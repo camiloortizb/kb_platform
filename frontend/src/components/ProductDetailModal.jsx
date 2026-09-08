@@ -1,25 +1,18 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   X,
   Copy,
   Check,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
   CheckCircle2,
   Sparkles,
-  AlertCircle,
-  Clock,
-  Layers,
   Globe,
-  Tag,
-  ArrowRight,
   Printer,
   Edit3,
   Save,
   DollarSign,
-  Package,
   Sliders
 } from 'lucide-react'
 import { useToast } from './ToastContainer'
@@ -43,24 +36,26 @@ export default function ProductDetailModal({
   const [saveSuccess, setSaveSuccess] = useState(false)
 
   // Editable Form State
-  const [formData, setFormData] = useState({
-    name: '',
-    format: '',
-    category: '',
-    wholesale_price: 14.50,
-    retail_price: 26.00,
-    cost_price: 8.50,
-    stock_quantity: 100,
-    moq: 3,
-    is_b2b_active: true,
-    description_full: '',
-    key_ingredients: '',
-    usage_instructions: '',
-    skin_types: '',
-    benefits: ''
-  })
+  const [prevProduct, setPrevProduct] = useState(product)
+  const [formData, setFormData] = useState(() => ({
+    name: product?.name || '',
+    format: product?.format || '',
+    category: product?.category || 'Cuidado Facial',
+    wholesale_price: Number(product?.wholesale_price || 14.50),
+    retail_price: Number(product?.retail_price || 26.00),
+    cost_price: Number(product?.cost_price || 8.50),
+    stock_quantity: Number(product?.stock_quantity || 100),
+    moq: Number(product?.moq || 3),
+    is_b2b_active: product?.is_b2b_active !== false,
+    description_full: product?.description_full || product?.description_short || '',
+    key_ingredients: product?.key_ingredients || '',
+    usage_instructions: product?.usage_instructions || '',
+    skin_types: product?.skin_types || '',
+    benefits: product?.benefits || ''
+  }))
 
-  useEffect(() => {
+  if (product !== prevProduct) {
+    setPrevProduct(product)
     if (product) {
       setFormData({
         name: product.name || '',
@@ -81,7 +76,7 @@ export default function ProductDetailModal({
       setIsEditing(false)
       setSaveSuccess(false)
     }
-  }, [product])
+  }
 
   if (!product) return null
 
@@ -122,10 +117,12 @@ export default function ProductDetailModal({
     { key: 'CATALOGING', label: 'Catalogación' },
     { key: 'AI_ENRICHMENT', label: 'IA Enriquecido' },
     { key: 'APPROVAL', label: 'Aprobación' },
+    { key: 'READY_TO_PUBLISH', label: 'Listo p/ Publicar' },
     { key: 'PUBLISHED', label: 'Publicado' }
   ]
 
-  const currentStageIndex = stages.findIndex((s) => s.key === product.lifecycle_stage) || 2
+  const stageIdx = stages.findIndex((s) => s.key === product.lifecycle_stage)
+  const currentStageIndex = stageIdx >= 0 ? stageIdx : 2
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-fadeIn">

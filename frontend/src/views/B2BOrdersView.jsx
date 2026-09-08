@@ -1,35 +1,30 @@
 import React, { useState, useMemo } from 'react'
-import * as XLSX from 'xlsx'
 import {
   ShoppingCart,
   Search,
   Plus,
-  Filter,
   CheckCircle2,
   Clock,
   FileSpreadsheet,
-  Printer,
   Download,
   Trash2,
-  Edit,
   User,
   Building2,
   Phone,
   Mail,
-  DollarSign,
-  Package,
   Layers,
   ArrowRight,
-  ShieldCheck,
-  AlertCircle,
   Sparkles,
-  ExternalLink,
-  ChevronRight,
   X,
-  FileText,
-  Copy
+  FileText
 } from 'lucide-react'
 import { useToast } from '../components/ToastContainer'
+import { buildBrandMap } from '../lib/brandUtils'
+import {
+  exportMasterCatalogExcel,
+  exportCustomerOrderSheet,
+  exportSingleOrderExcel
+} from '../lib/exportUtils'
 
 export default function B2BOrdersView({
   products = [],
@@ -74,12 +69,7 @@ export default function B2BOrdersView({
     notes: ''
   })
 
-  const brandMap = useMemo(() => {
-    return brands.reduce((acc, b) => {
-      acc[b.id] = b.name
-      return acc
-    }, {})
-  }, [brands])
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
   // ============================================================================
   // COMPUTED STATS & FILTERED ORDERS
@@ -246,10 +236,12 @@ export default function B2BOrdersView({
         await onSaveOrder(orderData, itemsData)
       }
 
+      setOrderSuccessMessage(`¡Orden ${orderNumber} registrada con éxito (${status})!`)
       addToast(`¡Orden ${orderNumber} guardada exitosamente con estado ${status}!`, 'success')
       setOrderItemsCart([])
       setOrderNotes('')
       setTimeout(() => {
+        setOrderSuccessMessage(null)
         setActiveTab('orders')
       }, 1500)
     } catch (err) {
@@ -260,87 +252,19 @@ export default function B2BOrdersView({
   }
 
   // ============================================================================
-  // EXPORT ENGINES (EXCEL XLSX, CUSTOMER ORDER SHEET, PDF FORMAL)
+  // EXPORT ENGINES (EXCEL XLSX, CUSTOMER ORDER SHEET)
   // ============================================================================
-
-  // 1. Export Full B2B Price List in Excel
   const handleExportPriceListExcel = () => {
-    const data = products.map((p) => {
-      const bName = brandMap[p.brand_id] || 'K-Beauty'
-      const wPrice = Number(p.wholesale_price || 14.50)
-      const rPrice = Number(p.retail_price || 26.00)
-      const margin = rPrice > 0 ? (((rPrice - wPrice) / rPrice) * 100).toFixed(1) : '0.0'
-      const pImgs = imagesByProduct[p.id] || []
-
-      return {
-        'Marca': bName,
-        'Código EAN-13': p.ean || '',
-        'SKU': p.sku || '',
-        'Producto': p.name || '',
-        'Formato': p.format || '',
-        'Precio Mayorista (USD)': wPrice,
-        'PVP Sugerido (USD)': rPrice,
-        'Margen Sugerido (%)': `${margin}%`,
-        'Pack Mínimo (MOQ)': p.moq || 3,
-        'Stock Disponible': p.stock_quantity || 100,
-        'Tipo de Piel': p.skin_types || '',
-        'Ingredientes Clave': p.key_ingredients || '',
-        'Link Foto': pImgs[0] || p.url_origen || ''
-      }
-    })
-
-    const worksheet = XLSX.utils.json_to_sheet(data)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Lista_Precios_B2B')
-    XLSX.writeFile(workbook, `KBeauty_Hub_Lista_Precios_B2B_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    exportMasterCatalogExcel(products, brandMap, {}, imagesByProduct)
   }
 
-  // 2. Export Interactive Customer Order Sheet (with formulas & editable requested qty)
   const handleExportCustomerOrderSheet = () => {
-    const data = products.map((p, idx) => {
-      const bName = brandMap[p.brand_id] || 'K-Beauty'
-      const wPrice = Number(p.wholesale_price || 14.50)
-      const rPrice = Number(p.retail_price || 26.00)
-      const rowNum = idx + 2 // header is row 1
-
-      return {
-        'Marca': bName,
-        'Código EAN-13': p.ean || '',
-        'SKU': p.sku || '',
-        'Producto': p.name || '',
-        'Formato': p.format || '',
-        'Precio Mayorista USD': wPrice,
-        'PVP Sugerido USD': rPrice,
-        'Pack Mínimo': p.moq || 3,
-        'CANTIDAD A PEDIR (Ingresar aquí)': '',
-        'SUBTOTAL USD (Calculado)': { f: `F${rowNum}*I${rowNum}` }
-      }
-    })
-
-    const worksheet = XLSX.utils.json_to_sheet(data)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Planilla_Pedido_Cliente')
-    XLSX.writeFile(workbook, `KBeauty_Planilla_Pedido_B2B_Cliente_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    exportCustomerOrderSheet(products, brandMap)
   }
 
-  // 3. Export Specific Order to Excel
   const handleExportSingleOrderExcel = (order) => {
     const items = b2bOrderItems.filter((it) => it.order_id === order.id)
-    const rows = items.map((it) => ({
-      'Código EAN': it.ean || '',
-      'SKU': it.sku || '',
-      'Marca': it.brand_name || '',
-      'Producto': it.product_name || '',
-      'Cantidad': it.quantity,
-      'Precio Unitario (USD)': it.unit_price,
-      'Descuento (%)': it.discount_percent || 0,
-      'Subtotal (USD)': it.subtotal
-    }))
-
-    const worksheet = XLSX.utils.json_to_sheet(rows)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Detalle_Pedido')
-    XLSX.writeFile(workbook, `Orden_${order.order_number}_${order.client_name.replace(/\s+/g, '_')}.xlsx`)
+    exportSingleOrderExcel(order, items)
   }
 
   return (
@@ -370,8 +294,16 @@ export default function B2BOrdersView({
           <button
             onClick={handleExportPriceListExcel}
             className="px-3.5 py-2 chrome-btn-secondary text-slate-800 rounded-xl text-xs font-semibold transition flex items-center gap-1.5"
+            title="Exportar catálogo maestro completo a Excel"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Lista Precios XLSX
+          </button>
+          <button
+            onClick={handleExportCustomerOrderSheet}
+            className="px-3.5 py-2 chrome-btn-secondary text-slate-800 rounded-xl text-xs font-semibold transition flex items-center gap-1.5"
+            title="Descargar planilla Excel para que clientes completen pedidos"
+          >
+            <Download className="w-4 h-4 text-indigo-600" /> Planilla Pedido
           </button>
         </div>
       </div>
@@ -564,19 +496,27 @@ export default function B2BOrdersView({
                         ${Number(ord.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="p-4">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono inline-flex items-center gap-1 ${
+                        <select
+                          value={ord.status}
+                          onChange={(e) => {
+                            if (onUpdateOrderStatus) onUpdateOrderStatus(ord.id, e.target.value)
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-mono border cursor-pointer focus:outline-none ${
                             isConfirmed
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                               : isQuoted
-                              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200'
                               : isDelivered
-                              ? 'bg-purple-50 text-purple-800 border border-purple-200'
-                              : 'bg-slate-100 text-slate-700 border border-slate-200'
+                              ? 'bg-purple-50 text-purple-800 border-purple-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
                           }`}
                         >
-                          {ord.status}
-                        </span>
+                          <option value="QUOTED">QUOTED</option>
+                          <option value="CONFIRMED">CONFIRMED</option>
+                          <option value="PREPARING">PREPARING</option>
+                          <option value="DELIVERED">DELIVERED</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                        </select>
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -724,7 +664,13 @@ export default function B2BOrdersView({
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-[10px] font-bold text-slate-800 block">{bName}</span>
-                      <h4 className="text-xs font-semibold text-[#17181B] truncate">{p.name}</h4>
+                      <h4
+                        onClick={() => onSelectProduct && onSelectProduct(p)}
+                        className="text-xs font-semibold text-[#17181B] truncate hover:text-indigo-600 cursor-pointer"
+                        title="Ver detalle de producto"
+                      >
+                        {p.name}
+                      </h4>
                       <div className="text-[10px] text-[#6B6E75] font-mono mt-0.5 flex gap-2">
                         <span>SKU: {p.sku}</span>
                         <span>EAN: {p.ean?.slice(-6) || 'N/D'}</span>
@@ -779,9 +725,23 @@ export default function B2BOrdersView({
                       >
                         <div className="flex-1 min-w-0">
                           <span className="font-bold text-[#17181B] block truncate">{item.product.name}</span>
-                          <span className="text-[10px] text-[#6B6E75] font-mono">
-                            ${item.unit_price.toFixed(2)} c/u {item.discount_percent > 0 && `(-${item.discount_percent}%)`}
-                          </span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-[10px] text-[#6B6E75] font-mono">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.unit_price}
+                              onChange={(e) => handleUpdateItemPrice(idx, e.target.value)}
+                              className="w-16 bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-mono font-bold text-slate-900 focus:outline-none focus:border-indigo-500"
+                              title="Precio unitario negociado"
+                            />
+                            <span className="text-[10px] text-[#6B6E75] font-mono">c/u</span>
+                            {item.discount_percent > 0 && (
+                              <span className="text-[10px] text-emerald-700 font-semibold font-mono">
+                                (-{item.discount_percent}%)
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Quantity Controls */}
@@ -1060,8 +1020,22 @@ export default function B2BOrdersView({
             <div className="p-6 overflow-y-auto space-y-4 text-xs">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#F8F8F9] rounded-2xl border border-[#E7E8EB]">
                 <div>
-                  <span className="text-[#6B6E75] block text-[10px] uppercase font-bold">Estado:</span>
-                  <span className="font-bold text-slate-900 font-mono">{selectedOrderForDetail.status}</span>
+                  <span className="text-[#6B6E75] block text-[10px] uppercase font-bold mb-1">Estado:</span>
+                  <select
+                    value={selectedOrderForDetail.status}
+                    onChange={(e) => {
+                      const newStatus = e.target.value
+                      if (onUpdateOrderStatus) onUpdateOrderStatus(selectedOrderForDetail.id, newStatus)
+                      setSelectedOrderForDetail({ ...selectedOrderForDetail, status: newStatus })
+                    }}
+                    className="px-2 py-1 rounded-lg text-xs font-bold font-mono border border-slate-300 bg-white cursor-pointer focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="QUOTED">QUOTED</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
+                    <option value="PREPARING">PREPARING</option>
+                    <option value="DELIVERED">DELIVERED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
                 </div>
                 <div>
                   <span className="text-[#6B6E75] block text-[10px] uppercase font-bold">Fecha:</span>

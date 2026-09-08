@@ -1,17 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Globe,
   Search,
   ExternalLink,
   CheckCircle2,
-  AlertCircle,
   Clock,
-  RefreshCw,
-  ShoppingBag,
-  Zap,
-  Layers,
-  Sparkles
+  ShoppingBag
 } from 'lucide-react'
+import { buildBrandMap } from '../lib/brandUtils'
 
 export default function PublicationsView({
   products = [],
@@ -22,10 +18,14 @@ export default function PublicationsView({
   const [selectedChannel, setSelectedChannel] = useState('ALL')
   const [search, setSearch] = useState('')
 
-  const brandMap = brands.reduce((acc, b) => {
-    acc[b.id] = b.name
-    return acc
-  }, {})
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
+
+  const productMap = useMemo(() => {
+    return products.reduce((acc, p) => {
+      acc[p.id] = p
+      return acc
+    }, {})
+  }, [products])
 
   const channelsList = [
     { key: 'ALL', label: 'Todos los Canales' },
@@ -34,17 +34,23 @@ export default function PublicationsView({
     { key: 'mercadolibre', label: 'Mercado Libre Platinum' }
   ]
 
-  const filtered = productChannels.filter((ch) => {
-    if (selectedChannel !== 'ALL' && ch.channel_name !== selectedChannel) return false
-    const prod = products.find((p) => p.id === ch.product_id)
-    if (!prod) return true
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      const bName = (brandMap[prod.brand_id] || '').toLowerCase()
-      return prod.name.toLowerCase().includes(q) || (prod.sku && prod.sku.toLowerCase().includes(q)) || bName.includes(q)
-    }
-    return true
-  })
+  const filtered = useMemo(() => {
+    return productChannels.filter((ch) => {
+      if (selectedChannel !== 'ALL' && ch.channel_name !== selectedChannel) return false
+      const prod = productMap[ch.product_id]
+      if (!prod) return true
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        const bName = (brandMap[prod.brand_id] || '').toLowerCase()
+        return (
+          prod.name?.toLowerCase().includes(q) ||
+          (prod.sku && prod.sku.toLowerCase().includes(q)) ||
+          bName.includes(q)
+        )
+      }
+      return true
+    })
+  }, [productChannels, selectedChannel, search, productMap, brandMap])
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -105,7 +111,7 @@ export default function PublicationsView({
           </thead>
           <tbody className="divide-y divide-[#E7E8EB]">
             {filtered.slice(0, 40).map((ch) => {
-              const prod = products.find((p) => p.id === ch.product_id) || { name: 'Producto #' + ch.product_id, sku: 'SKU' }
+              const prod = productMap[ch.product_id] || { name: 'Producto #' + ch.product_id, sku: 'SKU' }
               const bName = brandMap[prod.brand_id] || 'K-Beauty'
               const isPublished = ch.status === 'PUBLISHED'
 

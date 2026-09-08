@@ -1,23 +1,17 @@
 import React, { useState, useMemo } from 'react'
-import * as XLSX from 'xlsx'
 import {
   Package,
   Search,
-  Filter,
   Grid,
   List as ListIcon,
   Download,
   CheckCircle2,
   Eye,
-  ShieldCheck,
-  Tag,
-  Layers,
-  Sparkles,
   X,
-  FileSpreadsheet,
-  ShoppingCart,
-  DollarSign
+  ShoppingCart
 } from 'lucide-react'
+import { buildBrandMap } from '../lib/brandUtils'
+import { exportMasterCatalogExcel, exportCustomerOrderSheet } from '../lib/exportUtils'
 
 export default function ProductsView({
   products = [],
@@ -33,12 +27,7 @@ export default function ProductsView({
   const [selectedSkinType, setSelectedSkinType] = useState('ALL')
   const [viewMode, setViewMode] = useState('grid')
 
-  const brandMap = useMemo(() => {
-    return brands.reduce((acc, b) => {
-      acc[b.id] = b.name
-      return acc
-    }, {})
-  }, [brands])
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
   const uniqueFormats = useMemo(() => {
     const set = new Set()
@@ -96,70 +85,12 @@ export default function ProductsView({
 
   // 1. Export Master B2B Catalog to Excel
   const handleExportExcel = () => {
-    const exportData = filteredProducts.map((p) => {
-      const dim = dimensionsByProduct[p.id] || {}
-      const wPrice = Number(p.wholesale_price || 14.50)
-      const rPrice = Number(p.retail_price || 26.00)
-      const margin = rPrice > 0 ? (((rPrice - wPrice) / rPrice) * 100).toFixed(1) : '0.0'
-      const pImgs = imagesByProduct[p.id] || []
-
-      return {
-        'Marca': brandMap[p.brand_id] || '',
-        'Código EAN-13': p.ean || '',
-        'SKU Comercial': p.sku || '',
-        'Producto': p.name || '',
-        'Formato': p.format || '',
-        'Precio Mayorista (USD)': wPrice,
-        'PVP Sugerido (USD)': rPrice,
-        'Margen Sugerido (%)': `${margin}%`,
-        'Pack Mínimo (MOQ)': p.moq || 3,
-        'Stock Físico': p.stock_quantity || 100,
-        'Etapa Ciclo de Vida': p.lifecycle_stage || 'PUBLISHED',
-        'Completitud (%)': p.completeness_score || 100,
-        'Ingredientes INCI': p.key_ingredients || '',
-        'Modo de Uso': p.usage_instructions || '',
-        'Tipo de Piel': p.skin_types || '',
-        'Beneficios': p.benefits || '',
-        'Alto (cm)': dim.height_cm || '',
-        'Ancho (cm)': dim.width_cm || '',
-        'Profundidad (cm)': dim.depth_cm || '',
-        'URL Foto Oficial': pImgs[0] || p.url_origen || '',
-        'Verificación': p.verification_status || 'VERIFICADO_OFICIAL_DOM'
-      }
-    })
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Catalogo_KBeauty_B2B')
-    XLSX.writeFile(workbook, `Catalogo_KBeauty_Hub_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    exportMasterCatalogExcel(filteredProducts, brandMap, dimensionsByProduct, imagesByProduct)
   }
 
   // 2. Export Customer Order Sheet (with formula calculation)
   const handleExportCustomerOrderSheet = () => {
-    const data = filteredProducts.map((p, idx) => {
-      const bName = brandMap[p.brand_id] || 'K-Beauty'
-      const wPrice = Number(p.wholesale_price || 14.50)
-      const rPrice = Number(p.retail_price || 26.00)
-      const rowNum = idx + 2
-
-      return {
-        'Marca': bName,
-        'Código EAN-13': p.ean || '',
-        'SKU': p.sku || '',
-        'Producto': p.name || '',
-        'Formato': p.format || '',
-        'Precio Mayorista USD': wPrice,
-        'PVP Sugerido USD': rPrice,
-        'Pack Mínimo': p.moq || 3,
-        'CANTIDAD A PEDIR (Ingresar aquí)': '',
-        'SUBTOTAL USD (Calculado)': { f: `F${rowNum}*I${rowNum}` }
-      }
-    })
-
-    const worksheet = XLSX.utils.json_to_sheet(data)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Planilla_Pedido_Cliente')
-    XLSX.writeFile(workbook, `KBeauty_Planilla_Pedido_B2B_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    exportCustomerOrderSheet(filteredProducts, brandMap)
   }
 
   return (
@@ -393,7 +324,6 @@ export default function ProductsView({
             const prodImages = imagesByProduct[p.id] || []
             const primaryImg = prodImages[0] || 'https://via.placeholder.com/100x100?text=K-Beauty'
             const bName = brandMap[p.brand_id] || 'K-Beauty'
-            const dim = dimensionsByProduct[p.id] || {}
             const wPrice = Number(p.wholesale_price || 14.50)
             const rPrice = Number(p.retail_price || 26.00)
 

@@ -1,14 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Activity,
   Search,
-  Clock,
-  ShieldCheck,
   User,
-  Bot,
-  Layers,
-  Sparkles,
-  Filter
+  Bot
 } from 'lucide-react'
 
 export default function ActivityLogView({
@@ -27,19 +22,21 @@ export default function ActivityLogView({
     { key: 'SYSTEM', label: 'Sistema / Triggers' }
   ]
 
-  const filtered = activityLogs.filter((log) => {
-    if (filterActor !== 'ALL' && log.actor !== filterActor) return false
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      return (
-        log.action.toLowerCase().includes(q) ||
-        log.entity_type.toLowerCase().includes(q) ||
-        (log.entity_id && log.entity_id.toLowerCase().includes(q)) ||
-        log.actor.toLowerCase().includes(q)
-      )
-    }
-    return true
-  })
+  const filtered = useMemo(() => {
+    return activityLogs.filter((log) => {
+      if (filterActor !== 'ALL' && log.actor !== filterActor) return false
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        return (
+          log.action?.toLowerCase().includes(q) ||
+          log.entity_type?.toLowerCase().includes(q) ||
+          (log.entity_id && log.entity_id.toLowerCase().includes(q)) ||
+          log.actor?.toLowerCase().includes(q)
+        )
+      }
+      return true
+    })
+  }, [activityLogs, filterActor, search])
 
   return (
     <div className="space-y-6 animate-fadeIn">

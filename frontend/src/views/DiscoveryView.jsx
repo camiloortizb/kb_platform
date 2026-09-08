@@ -1,16 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Globe,
   Search,
   ExternalLink,
-  Plus,
-  Layers,
-  Sparkles,
-  CheckCircle2,
-  PackagePlus,
-  Filter,
-  ArrowRight
+  PackagePlus
 } from 'lucide-react'
+import { buildBrandMap } from '../lib/brandUtils'
 
 export default function DiscoveryView({
   discoveredProducts = [],
@@ -20,27 +15,26 @@ export default function DiscoveryView({
   const [search, setSearch] = useState('')
   const [selectedBrand, setSelectedBrand] = useState('ALL')
 
-  const brandMap = brands.reduce((acc, b) => {
-    acc[b.id] = b.name
-    return acc
-  }, {})
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
-  const filtered = discoveredProducts.filter((p) => {
-    if (selectedBrand !== 'ALL' && String(p.brand_id) !== String(selectedBrand)) {
-      return false
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      const bName = (brandMap[p.brand_id] || '').toLowerCase()
-      return (
-        p.name.toLowerCase().includes(q) ||
-        (p.sku && p.sku.toLowerCase().includes(q)) ||
-        (p.ean && p.ean.toLowerCase().includes(q)) ||
-        bName.includes(q)
-      )
-    }
-    return true
-  })
+  const filtered = useMemo(() => {
+    return discoveredProducts.filter((p) => {
+      if (selectedBrand !== 'ALL' && String(p.brand_id) !== String(selectedBrand)) {
+        return false
+      }
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        const bName = (brandMap[p.brand_id] || '').toLowerCase()
+        return (
+          p.name?.toLowerCase().includes(q) ||
+          (p.sku && p.sku.toLowerCase().includes(q)) ||
+          (p.ean && p.ean.toLowerCase().includes(q)) ||
+          bName.includes(q)
+        )
+      }
+      return true
+    })
+  }, [discoveredProducts, selectedBrand, search, brandMap])
 
   return (
     <div className="space-y-6 animate-fadeIn">

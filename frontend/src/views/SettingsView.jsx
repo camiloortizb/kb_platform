@@ -1,22 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
-  Sliders,
   DollarSign,
   Package,
-  ShieldCheck,
-  Globe,
   Save,
-  CheckCircle2,
   RefreshCw,
   AlertTriangle,
   Building2,
   Percent,
   TrendingUp,
-  Link,
   Zap,
   Info,
-  SlidersHorizontal,
-  Server
+  SlidersHorizontal
 } from 'lucide-react'
 import { configService } from '../services/configService'
 import { useToast } from '../components/ToastContainer'
@@ -24,13 +18,9 @@ import { useToast } from '../components/ToastContainer'
 export default function SettingsView() {
   const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState('commercial') // 'commercial', 'purchasing', 'taxes', 'integrations'
-  const [config, setConfig] = useState(configService.getConfig())
+  const [config, setConfig] = useState(() => configService.getConfig())
   const [saving, setSaving] = useState(false)
   const [testingChannel, setTestingChannel] = useState(null)
-
-  useEffect(() => {
-    setConfig(configService.getConfig())
-  }, [])
 
   const handleSaveAll = async () => {
     try {

@@ -1,18 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   TrendingUp,
   Search,
-  Plus,
-  Layers,
-  Calendar,
   DollarSign,
-  Mail,
   User,
-  ArrowRight,
-  CheckCircle2,
-  Clock,
   ShoppingCart
 } from 'lucide-react'
+import { buildBrandMap } from '../lib/brandUtils'
 
 export default function NegotiationsView({
   negotiations = [],
@@ -22,10 +16,7 @@ export default function NegotiationsView({
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('ALL')
 
-  const brandMap = brands.reduce((acc, b) => {
-    acc[b.id] = b.name
-    return acc
-  }, {})
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
   const statuses = [
     { key: 'ALL', label: 'Todas las Negociaciones' },
@@ -36,15 +27,17 @@ export default function NegotiationsView({
     { key: 'CLOSED', label: 'Cerradas / OC' }
   ]
 
-  const filtered = negotiations.filter((n) => {
-    if (filterStatus !== 'ALL' && n.status !== filterStatus) return false
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      const bName = (brandMap[n.brand_id] || '').toLowerCase()
-      return n.title.toLowerCase().includes(q) || bName.includes(q)
-    }
-    return true
-  })
+  const filtered = useMemo(() => {
+    return negotiations.filter((n) => {
+      if (filterStatus !== 'ALL' && n.status !== filterStatus) return false
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        const bName = (brandMap[n.brand_id] || '').toLowerCase()
+        return (n.title || '').toLowerCase().includes(q) || bName.includes(q)
+      }
+      return true
+    })
+  }, [negotiations, filterStatus, search, brandMap])
 
   return (
     <div className="space-y-6 animate-fadeIn">

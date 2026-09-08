@@ -615,7 +615,6 @@ function MainApp() {
                   purchaseOrders={purchaseOrders}
                   discoveredCount={discoveredProducts.length}
                   onNavigate={(v) => setCurrentView(v)}
-                  onSelectProduct={(p) => setSelectedProduct(p)}
                 />
               )}
 

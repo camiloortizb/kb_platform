@@ -1,17 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   ShoppingCart,
   Search,
-  Plus,
   CheckCircle2,
-  Clock,
-  Package,
-  Layers,
-  Sparkles,
   ArrowRight,
-  ShieldCheck,
-  AlertCircle
+  ShieldCheck
 } from 'lucide-react'
+import { buildBrandMap } from '../lib/brandUtils'
 
 export default function PurchaseOrdersView({
   purchaseOrders = [],
@@ -23,10 +18,7 @@ export default function PurchaseOrdersView({
   const [search, setSearch] = useState('')
   const [confirmingId, setConfirmingId] = useState(null)
 
-  const brandMap = brands.reduce((acc, b) => {
-    acc[b.id] = b.name
-    return acc
-  }, {})
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
   const filteredPos = purchaseOrders.filter((po) => {
     if (search.trim()) {
@@ -82,6 +74,7 @@ export default function PurchaseOrdersView({
           const isConfirmed = po.status === 'CONFIRMED'
           const isReceived = po.status === 'RECEIVED'
           const isDraft = po.status === 'DRAFT'
+          const poSpecificItems = poItems.filter((it) => it.purchase_order_id === po.id)
 
           return (
             <div
@@ -121,6 +114,12 @@ export default function PurchaseOrdersView({
                     <span>Monto Total:</span>
                     <span className="font-bold text-[#17181B] font-mono">
                       ${Number(po.total_amount_usd || 0).toLocaleString()} USD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Ítems vinculados:</span>
+                    <span className="text-slate-700 font-mono font-medium">
+                      {poSpecificItems.length > 0 ? `${poSpecificItems.length} SKUs` : 'Catálogo directo'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

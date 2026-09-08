@@ -1,18 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   CheckCircle2,
   AlertCircle,
-  Clock,
   Eye,
   Check,
   RotateCcw,
-  Sparkles,
-  ShieldCheck,
-  Search,
-  ExternalLink,
-  Tag
+  Search
 } from 'lucide-react'
 import { useToast } from '../components/ToastContainer'
+import { buildBrandMap } from '../lib/brandUtils'
 
 export default function ApprovalsView({
   products = [],
@@ -28,25 +24,24 @@ export default function ApprovalsView({
   const [returnReason, setReturnReason] = useState('')
   const [returningProductId, setReturningProductId] = useState(null)
 
-  const brandMap = brands.reduce((acc, b) => {
-    acc[b.id] = b.name
-    return acc
-  }, {})
+  const brandMap = useMemo(() => buildBrandMap(brands), [brands])
 
-  const pendingApprovalProducts = products.filter((p) => {
-    if (p.lifecycle_stage !== 'APPROVAL') return false
-    if (filterBrand !== 'ALL' && String(p.brand_id) !== String(filterBrand)) return false
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      const bName = (brandMap[p.brand_id] || '').toLowerCase()
-      return (
-        p.name?.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q) ||
-        bName.includes(q)
-      )
-    }
-    return true
-  })
+  const pendingApprovalProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (p.lifecycle_stage !== 'APPROVAL') return false
+      if (filterBrand !== 'ALL' && String(p.brand_id) !== String(filterBrand)) return false
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        const bName = (brandMap[p.brand_id] || '').toLowerCase()
+        return (
+          p.name?.toLowerCase().includes(q) ||
+          p.sku?.toLowerCase().includes(q) ||
+          bName.includes(q)
+        )
+      }
+      return true
+    })
+  }, [products, filterBrand, search, brandMap])
 
   const handleConfirmReturn = (productId) => {
     if (!returnReason.trim()) {

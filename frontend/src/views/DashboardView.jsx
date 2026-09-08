@@ -1,9 +1,7 @@
 import React from 'react'
 import {
-  Package,
   Layers,
   ShoppingCart,
-  CheckCircle2,
   AlertCircle,
   Clock,
   Sparkles,
@@ -11,10 +9,7 @@ import {
   TrendingUp,
   Globe,
   ShieldCheck,
-  Zap,
-  Activity,
-  Award,
-  BarChart3
+  Activity
 } from 'lucide-react'
 
 export default function DashboardView({
@@ -23,14 +18,12 @@ export default function DashboardView({
   negotiations = [],
   purchaseOrders = [],
   discoveredCount = 0,
-  onNavigate,
-  onSelectProduct
+  onNavigate
 }) {
   const catalogingCount = products.filter((p) => p.lifecycle_stage === 'CATALOGING' || !p.lifecycle_stage).length
   const aiEnrichCount = products.filter((p) => p.lifecycle_stage === 'AI_ENRICHMENT').length
   const approvalCount = products.filter((p) => p.lifecycle_stage === 'APPROVAL').length
   const publishedCount = products.filter((p) => p.lifecycle_stage === 'PUBLISHED').length
-  const readyCount = products.filter((p) => p.lifecycle_stage === 'READY_TO_PUBLISH').length
 
   const pendingPos = purchaseOrders.filter((po) => po.status === 'CONFIRMED' || po.status === 'DRAFT').length
   const activeNegs = negotiations.filter((n) => n.status !== 'REJECTED' && n.status !== 'CLOSED').length

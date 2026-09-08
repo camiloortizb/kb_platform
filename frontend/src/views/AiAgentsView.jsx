@@ -1,14 +1,12 @@
 import React, { useState } from 'react'
 import {
   Sparkles,
-  Bot,
   Play,
   CheckCircle2,
   Clock,
   Zap,
   ShieldCheck,
   Globe,
-  Database,
   Cpu
 } from 'lucide-react'
 
@@ -24,7 +22,7 @@ export default function AiAgentsView({
       name: 'Discovery Agent',
       icon: Globe,
       color: 'text-slate-800 bg-slate-100 border-slate-300 shadow-xs',
-      description: 'Rastrea tiendas oficiales D2C y descubre nuevos lanzamientos de K-Beauty sin tocar el catálogo comercial.',
+      description: 'Rastrea fuentes oficiales de marcas y descubre nuevos lanzamientos sin tocar el catálogo comercial.',
       model: 'Playwright + Gemini 3.6 Flash'
     },
     {
@@ -40,7 +38,7 @@ export default function AiAgentsView({
       name: 'Enrichment Agent (Vision OCR)',
       icon: Sparkles,
       color: 'text-purple-800 bg-purple-50 border-purple-200 shadow-xs',
-      description: 'Segmenta infografías coreanas verticales de hasta 8,000px y extrae fórmulas INCI oficiales en nomenclatura internacional.',
+      description: 'Segmenta infografías verticales de alta resolución y extrae fórmulas INCI oficiales en nomenclatura internacional.',
       model: 'Gemini Vision 3.6 Flash'
     },
     {

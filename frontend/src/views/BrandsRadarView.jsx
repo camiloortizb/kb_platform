@@ -1,14 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Layers,
   Search,
-  ExternalLink,
-  Sparkles,
   TrendingUp,
   Globe,
-  Plus,
   CheckCircle2,
-  Filter,
   ArrowRight
 } from 'lucide-react'
 
@@ -22,24 +18,26 @@ export default function BrandsRadarView({
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [search, setSearch] = useState('')
 
-  const statusTabs = [
+  const statusTabs = useMemo(() => [
     { key: 'ALL', label: 'Todas las Marcas', count: brands.length },
     { key: 'RADAR', label: 'En Radar', count: brands.filter((b) => b.status === 'RADAR').length },
     { key: 'PROSPECT', label: 'Prospección', count: brands.filter((b) => b.status === 'PROSPECT').length },
     { key: 'NEGOTIATING', label: 'En Negociación', count: brands.filter((b) => b.status === 'NEGOTIATING').length },
     { key: 'ACTIVE', label: 'Comerciales Activas', count: brands.filter((b) => b.status === 'ACTIVE' || !b.status).length }
-  ]
+  ], [brands])
 
-  const filteredBrands = brands.filter((b) => {
-    if (filterStatus !== 'ALL' && (b.status || 'ACTIVE') !== filterStatus) {
-      return false
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      return b.name.toLowerCase().includes(q) || (b.notes && b.notes.toLowerCase().includes(q))
-    }
-    return true
-  })
+  const filteredBrands = useMemo(() => {
+    return brands.filter((b) => {
+      if (filterStatus !== 'ALL' && (b.status || 'ACTIVE') !== filterStatus) {
+        return false
+      }
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        return b.name?.toLowerCase().includes(q) || (b.notes && b.notes.toLowerCase().includes(q))
+      }
+      return true
+    })
+  }, [brands, filterStatus, search])
 
   return (
     <div className="space-y-6 animate-fadeIn">
